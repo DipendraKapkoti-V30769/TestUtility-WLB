@@ -1,0 +1,46 @@
+﻿
+SELECT
+distinct   
+  --DB_EDW.dbo.tbl_d_agent.Dagt_StateOp_nm,
+  --DB_EDW.dbo.tbl_d_agent.dagt_writing_nbr,
+  DB_EDW.dbo.tbl_d_group.dgrp_groupNumber_no As GroupNo,
+ -- DB_EDW.dbo.tbl_d_productPlanCode.dppc_plan_cd ,  
+  --DB_EDW.dbo.tbl_d_policyContract.dpco_region_cd,
+  --DB_EDW.dbo.tbl_d_lkp_company.dcom_legacyCompany_cd,
+
+  convert(varchar(15), DB_EDW.dbo.tbl_f_claim.fclm_claim_no) as ClaimNumber,  
+  DB_EDW.dbo.tbl_d_productPlanCode.dppc_plan_cd as PlanCode,  
+  DB_EDW.dbo.tbl_d_policyContract.dpco_policy_no as Policy,  
+  DB_EDW.dbo.tbl_f_claim.fclm_claimant_nm as Claimant,  
+  DB_EDW.dbo.tbl_d_claimStatus.dcsa_claimStatus_dsc as ClaimStatus,  
+  (LTRIM(RTRIM(DB_EDW.dbo.tbl_d_policyContract.dpco_insuredlast_nm))  + ', ' + LTRIM(RTRIM(DB_EDW.dbo.tbl_d_policyContract.dpco_insuredfirst_nm))) as Insured,  
+  DB_EDW.dbo.tbl_d_productPlanCode.dppc_lobLong_dsc as LOB,  
+  DB_EDW.dbo.tbl_d_claimBenefit.dclb_benefit_cd as BenefitCode,  
+  DB_EDW.dbo.tbl_d_policyContract.dpco_orgIssue_dt as EffectiveDate,  
+  DB_EDW.dbo.tbl_f_claim.ddat_paid_date_sid as PaidDate,  
+  DB_EDW.dbo.tbl_f_claim.fclm_treatment_dt as TreatmentDate,   
+  DB_EDW.dbo.tbl_f_claim.fclm_state_of_issue as IssueState,  
+  DB_EDW.dbo.tbl_d_policyContract.dpco_coverageType_cd as CoverageType,
+  datepart(yyyy, DB_EDW.dbo.tbl_f_claim.fclm_treatment_dt) As Year
+   
+FROM
+   DB_EDW.dbo.tbl_d_claimBenefit with(nolock) INNER JOIN DB_EDW.dbo.tbl_f_claim ON (DB_EDW.dbo.tbl_d_claimBenefit.dclb_benefit_seq=DB_EDW.dbo.tbl_f_claim.dclb_benefit_seq)  
+   INNER JOIN DB_EDW.dbo.tbl_d_claimStatus with(nolock) ON (DB_EDW.dbo.tbl_d_claimStatus.dcsa_claimStatus_seq=DB_EDW.dbo.tbl_f_claim.dcsa_claimStatus_seq)  
+   INNER JOIN DB_EDW.dbo.tbl_d_groupHistory with(nolock) ON (DB_EDW.dbo.tbl_f_claim.dgrh_grouphistory_seq=DB_EDW.dbo.tbl_d_groupHistory.dgrh_grouphistory_seq)  
+   INNER JOIN DB_EDW.dbo.tbl_d_group with(nolock) ON (DB_EDW.dbo.tbl_d_groupHistory.dgrp_groupNumber_no=DB_EDW.dbo.tbl_d_group.dgrp_groupNumber_no and DB_EDW.dbo.tbl_d_groupHistory.dgrp_company_cd=DB_EDW.dbo.tbl_d_group.dgrp_company_cd)  
+   INNER JOIN DB_EDW.dbo.tbl_d_policyContract with(nolock) ON (DB_EDW.dbo.tbl_d_policyContract.dpco_policyContract_seq=DB_EDW.dbo.tbl_f_claim.dpco_policyContract_seq)  
+   INNER JOIN DB_EDW.dbo.tbl_d_productPlanCode with(nolock) ON (DB_EDW.dbo.tbl_d_productPlanCode.dppc_productPlanCode_seq=DB_EDW.dbo.tbl_f_claim.dppc_productPlanCode_seq)    
+   INNER JOIN DB_EDW.dbo.tbl_d_date  DB_EDW_dbo_tbl_d_date_claim_paid with(nolock) ON (DB_EDW.dbo.tbl_f_claim.ddat_paid_date_sid=DB_EDW_dbo_tbl_d_date_claim_paid.ddat_date_sid)  
+   INNER JOIN DB_EDW.dbo.tbl_d_date  DB_EDW_dbo_tbl_d_date_treatment with(nolock) ON (DB_EDW_dbo_tbl_d_date_treatment.ddat_cal_date_dt=DB_EDW.dbo.tbl_f_claim.fclm_treatment_dt)  
+   INNER JOIN DB_EDW.dbo.tbl_f_agentCommissionHierarchy ON (  DB_EDW.dbo.tbl_f_agentCommissionHierarchy.dpco_policyContract_seq=DB_EDW.dbo.tbl_d_policyContract.dpco_policyContract_seq)
+   INNER JOIN DB_EDW.dbo.tbl_d_policyContractRider ON ( DB_EDW.dbo.tbl_f_agentCommissionHierarchy.dpcr_policyRider_seq=DB_EDW.dbo.tbl_d_policyContractRider.dpcr_policyRider_seq)
+   INNER JOIN DB_EDW.dbo.tbl_d_lkp_company ON (DB_EDW.dbo.tbl_d_policyContractRider.dcom_company_cd=DB_EDW.dbo.tbl_d_lkp_company.dcom_company_cd)
+   INNER JOIN DB_EDW.dbo.tbl_d_agent ON (DB_EDW.dbo.tbl_f_agentCommissionHierarchy.dagt_agent_seq=DB_EDW.dbo.tbl_d_agent.dagt_agent_seq)
+
+WHERE
+  datepart(yyyy, DB_EDW.dbo.tbl_f_claim.fclm_treatment_dt) IN (2018, 2019, 2020)  
+   AND 
+   DB_EDW.dbo.tbl_d_groupHistory.dgrh_groupStatus_cd= 'A'   
+   AND DB_EDW.dbo.tbl_d_groupHistory.dgrh_CurrentRecord_ind='Y' 
+   AND DB_EDW.dbo.tbl_d_policyContractRider.dpcr_currentRecord_Ind='Y'  
+   AND DB_EDW.dbo.tbl_d_group.dgrp_groupNumber_no IN (@GroupNumber)
